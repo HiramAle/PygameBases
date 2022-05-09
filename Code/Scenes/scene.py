@@ -1,7 +1,8 @@
 import pygame
 from Code.GUI.transitions import FadeIn, FadeOut
-from Code.GUI.buttons import TextButton
 from Code.support import import_cut_graphics, get_center, timer
+from Code.Entities.player import Player
+from Code.Scenes.camera import YSortCameraGroup
 import os
 
 
@@ -22,9 +23,9 @@ class Scene:
         self.obstacle_sprites = pygame.sprite.Group()
         # transitions
         self.start_transitioning = True
-        self.start_transition = FadeIn(game.game_canvas, 1.5)
+        self.start_transition = FadeIn(game.game_canvas, 1)
         self.end_transitioning = False
-        self.end_transition = FadeOut(game.game_canvas, 1.5)
+        self.end_transition = FadeOut(game.game_canvas, 1)
         # Mouse cursor visibility
         pygame.mouse.set_visible(False)
 
@@ -50,7 +51,7 @@ class Intro(Scene):
         self.animation_speed = 0.1
         self.animations = []
         self.frame_index = 0
-        self.animations = import_cut_graphics("../Resources/Sprites/intro.png", 96, 279)
+        self.animations = import_cut_graphics("Sprites/intro.png", 96, 279)
         # Animation image
         self.image = self.animations[self.frame_index]
         # Center of the display
@@ -110,23 +111,14 @@ class Menu(Scene):
         self.text_options_rect = self.text_play.get_rect(center=(x_text_offset + (1120 / 3), y_text_offset))
         self.text_exit = self.font.render("Exit", False, "#565656")
         self.text_exit_rect = self.text_play.get_rect(center=(x_text_offset + (1120 / 3) * 2, y_text_offset))
-
+        # Cursor
         self.cursor_img = pygame.image.load(
             os.path.join(self.game.resources_dir, "Images", "cursor.png")).convert_alpha()
         self.cursor_rect = self.cursor_img.get_rect()
         self.cursor_y = self.box_rect.y + 100
         self.cursor_x = self.box_rect.x + 32 + 20
         self.cursor_rect.x, self.cursor_rect.y = self.cursor_x, self.cursor_y
-
-        # Get the measurements of the screen to place the buttons
-        center_x, center_y = get_center()
-        y_segments = game.game_canvas.get_size()[1] / 4
-        # Initialize the buttons
-        # self.start_button = TextButton(center_x, y_segments, game.game_canvas, "Start", "White", False, font_size=100)
-        #
-        # self.options_button = TextButton(center_x, y_segments * 2, game.game_canvas, "Options", "White", False,
-        #                                  font_size=100)
-        # self.exit_button = TextButton(center_x, y_segments * 3, game.game_canvas, "Exit", "White", False, font_size=100)
+        # Menu options
         self.menu_options = ["Play", "Options", "Exit"]
         self.index = 0
 
@@ -140,21 +132,13 @@ class Menu(Scene):
                 GameWorld(self.game).enter_state()
 
     def update(self, delta_time, actions):
-        self.update_cursor(actions)
+
         if actions["space"]:
             if self.menu_options[self.index] == "Play":
                 self.end_transitioning = True
             elif self.menu_options[self.index] == "Exit":
                 self.game.exit_game()
-
-    # Check if any button get pressed only if it's not transitioning
-    # if not self.start_transitioning and not self.end_transitioning:
-    #     if self.start_button.check_click():
-    #         self.end_transitioning = True
-    #     elif self.options_button.check_click():
-    #         print("Pressed")
-    #     elif self.exit_button.check_click():
-    #         self.game.exit_game()
+        self.update_cursor(actions)
 
     def update_cursor(self, actions):
         if actions['right']:
@@ -162,15 +146,14 @@ class Menu(Scene):
                 self.index = 0
             else:
                 self.index += 1
-            self.game.reset_keys()
         elif actions['left']:
             if not self.index:
                 self.index = len(self.menu_options) - 1
             else:
                 self.index -= 1
-            self.game.reset_keys()
+        self.game.reset_keys()
 
-        self.cursor_rect.x = self.cursor_x + (self.index * (1120/3))
+        self.cursor_rect.x = self.cursor_x + (self.index * (1120 / 3))
 
     def render(self, display: pygame.surface.Surface):
         display.blit(self.background_image, (0, 0))
@@ -183,49 +166,69 @@ class Menu(Scene):
 
         self.render_transition()
 
-        # Clear the screen
-        # display.fill("#262626")
-        # Draw the buttons
-        # self.start_button.draw()
-        #
-        # self.options_button.draw()
-        # self.exit_button.draw()
-        # Render the transition if its necessary
-
 
 class GameWorld(Scene):
     def __init__(self, game):
         super().__init__(game)
+        self.player_x, self.player_y = 100, 100
+        self.bg_image = pygame.image.load(os.path.join(self.game.resources_dir, "Images","ground.png")).convert_alpha()
+        self.visible_sprites = YSortCameraGroup(self.game.game_canvas, self.bg_image)
+        self.obstacle_sprites = pygame.sprite.Group()
+        self.player = Player(self.visible_sprites, (self.player_x, self.player_y), self.obstacle_sprites)
 
     def update(self, delta_time, actions):
+        self.visible_sprites.update()
+        self.player.update()
+
         if actions["pause"]:
             self.game.reset_keys()
             PauseMenu(self.game).enter_state()
 
     def render(self, display: pygame.surface.Surface):
         display.fill("#262626")
+        self.visible_sprites.y_draw(self.player)
+        # display.blit(self.player.image, (100, 100))
+        # print(self.player.status)
+        # print(self.player.animations[self.player.status])
         self.render_transition()
 
-    def render_transition(self): ...
-    # Check if the star transition is playing
-    # if self.start_transitioning:
-    #     if self.start_transition.play(self.game.dt):
-    #         self.start_transitioning = False
+    def render_transition(self):
+        # Check if the star transition is playing
+        if self.start_transitioning:
+            if self.start_transition.play(self.game.dt):
+                self.start_transitioning = False
+
+
+class Dialogue(Scene):
+    def __init__(self, game):
+        super().__init__(game)
 
 
 class PauseMenu(Scene):
     def __init__(self, game):
         super().__init__(game)
-        # menu_height = (70 * self.game.game_canvas.get_size()[1]) / 100
+        # Menu
         self.menu = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "Pause_Menu.png")).convert_alpha()
         self.menu = pygame.transform.smoothscale(self.menu, (self.menu.get_size()[0], 500))
         self.menu_x = self.game.game_canvas.get_size()[0] - 20 - self.menu.get_size()[0]
         self.menu_y = self.game.game_canvas.get_size()[1] - (self.game.game_canvas.get_size()[1] / 2) - (
                 self.menu.get_size()[1] / 2)
         self.menu_rect = self.menu.get_rect(topleft=(self.menu_x, self.menu_y))
-        # self.menu_options = {0: "Party", 1: "Items", 2: "Magic", 3: "Exit"}
-        self.menu_options = ["Party", "Items", "Magic", "Exit"]
+        # Menu options
+        self.menu_options = ["Option1", "Option2", "Option3", "Exit"]
         self.index = 0
+        # Text
+        x_text_offset = self.menu_rect.x + 50
+        y_text_offset = self.menu_rect.y + 95
+        self.font = pygame.font.Font(os.path.join(self.game.resources_dir, "Fonts", "pokemon_pixel_font.ttf"), 60)
+        self.text_option = self.font.render("Option1", False, "#565656")
+        self.text_option_rect = self.text_option.get_rect(midleft=(x_text_offset, y_text_offset))
+        self.text_option2 = self.font.render("Option2", False, "#565656")
+        self.text_option2_rect = self.text_option2.get_rect(midleft=(x_text_offset, y_text_offset + 100))
+        self.text_option3 = self.font.render("Option3", False, "#565656")
+        self.text_option3_rect = self.text_option3.get_rect(midleft=(x_text_offset, y_text_offset + (100 * 2)))
+        self.text_exit = self.font.render("Exit", False, "#565656")
+        self.text_exit_rect = self.text_exit.get_rect(midleft=(x_text_offset, y_text_offset + (100 * 3)))
         # Cursor
         self.cursor_img = pygame.image.load(
             os.path.join(self.game.resources_dir, "Images", "cursor.png")).convert_alpha()
@@ -238,6 +241,11 @@ class PauseMenu(Scene):
         if actions["pause"]:
             self.exit_state()
             self.game.reset_keys()
+        elif actions["space"]:
+            if self.menu_options[self.index] == "Exit":
+                self.game.game_stack = []
+                Menu(self.game).enter_state()
+        self.game.reset_keys()
 
     def update_cursor(self, actions):
         if actions['down']:
@@ -257,6 +265,10 @@ class PauseMenu(Scene):
         self.cursor_rect.y = self.cursor_y + (self.index * 100)
 
     def render(self, display: pygame.surface.Surface):
-        # self.prev_scene.render(display)
+        self.prev_scene.render(display)
         display.blit(self.menu, self.menu_rect)
+        display.blit(self.text_option, self.text_option_rect)
+        display.blit(self.text_option2, self.text_option2_rect)
+        display.blit(self.text_option3, self.text_option3_rect)
+        display.blit(self.text_exit, self.text_exit_rect)
         display.blit(self.cursor_img, self.cursor_rect)

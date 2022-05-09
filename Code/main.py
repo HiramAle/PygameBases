@@ -28,10 +28,9 @@ class Game:
         self.prev_time = 0
         self.dt = 0
 
-        self.load_assets()
+        self.resources_dir = os.path.join("../Resources")
 
         self.load_scene()
-
 
     def set_screen(self):
         self.display = pygame.display.set_mode(
@@ -104,6 +103,9 @@ class Game:
     def load_scene(self):
         self.game_stack.append(Intro(self))
 
+    def clear_stack(self):
+        self.game_stack = []
+
     def get_dt(self):
         now = time.time()
         self.dt = now - self.prev_time
@@ -112,7 +114,6 @@ class Game:
     def load_assets(self):
         # Create pointers to directories
         self.resources_dir = os.path.join("../Resources")
-
 
 
 if __name__ == '__main__':

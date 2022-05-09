@@ -20,6 +20,7 @@ class Button:
         else:
             return False
 
+
 class TextButton(Button):
     def __init__(self, x, y, display, text, colour="White", antialiasing=False, background=None,
                  font_path="../Resources/Fonts/pokemon_pixel_font.ttf", font_size=20, hover_colour="#D74B4B"):
