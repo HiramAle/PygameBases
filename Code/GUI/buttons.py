@@ -20,15 +20,13 @@ class Button:
         else:
             return False
 
-
-
 class TextButton(Button):
     def __init__(self, x, y, display, text, colour="White", antialiasing=False, background=None,
                  font_path="../Resources/Fonts/pokemon_pixel_font.ttf", font_size=20, hover_colour="#D74B4B"):
         super().__init__(x, y, display)
         # font
         self.font = pygame.font.Font(font_path, font_size)
-        self.font2 = pygame.font.Font(font_path, font_size+2)
+        self.font2 = pygame.font.Font(font_path, font_size + 2)
         # text
         self.text = text
         self.text_surface = self.font.render(text, antialiasing, colour, background)
@@ -62,8 +60,6 @@ class TextButton(Button):
         self.rect = self.text_surface.get_rect(center=(self.x, self.y))
 
         shadow_surface = self.font2.render(self.text, self.text_aa, "grey", self.background)
-        shadow_rect = self.text_surface.get_rect(center=(self.x+4, self.y+2))
+        shadow_rect = self.text_surface.get_rect(center=(self.x + 4, self.y + 2))
         self.display.blit(shadow_surface, shadow_rect)
         self.display.blit(self.text_surface, self.rect)
-
-

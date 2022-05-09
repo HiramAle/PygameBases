@@ -25,6 +25,8 @@ class Scene:
         self.start_transition = FadeIn(game.game_canvas, 1.5)
         self.end_transitioning = False
         self.end_transition = FadeOut(game.game_canvas, 1.5)
+        # Mouse cursor visibility
+        pygame.mouse.set_visible(False)
 
     def update(self, delta_time, actions): ...
 
@@ -91,15 +93,42 @@ class Intro(Scene):
 class Menu(Scene):
     def __init__(self, game):
         super().__init__(game)
+        # Background
+        self.background_image = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "Start_menu_background.png"))
+        # Box
+        self.box = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "Start_menu_box.png")).convert_alpha()
+        self.box_rect = self.box.get_rect(topleft=(64, 394))
+        # Texts
+        x_text_offset = self.box_rect.x + 32 + (1120 / 3) / 2
+        y_text_offset = self.box_rect.y + 32 + 90
+        self.font = pygame.font.Font(os.path.join(self.game.resources_dir, "Fonts", "pokemon_pixel_font.ttf"), 100)
+        self.text_play = self.font.render("Play", False, "#565656")
+        self.text_play_rect = self.text_play.get_rect(center=(x_text_offset, y_text_offset))
+        self.text_options = self.font.render("Options", False, "#565656")
+        self.text_options_rect = self.text_play.get_rect(center=(x_text_offset + (1120 / 3), y_text_offset))
+        self.text_exit = self.font.render("Exit", False, "#565656")
+        self.text_exit_rect = self.text_play.get_rect(center=(x_text_offset + (1120 / 3) * 2, y_text_offset))
+
+        self.cursor_img = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "cursor.png")).convert_alpha()
+        self.cursor_rect = self.cursor_img.get_rect()
+        self.cursor_y = self.box_rect.y + 100
+        self.cursor_x = self.box_rect.x + 32 + 20
+        self.cursor_rect.x, self.cursor_rect.y = self.cursor_x, self.cursor_y
+
         # Get the measurements of the screen to place the buttons
         center_x, center_y = get_center()
         y_segments = game.game_canvas.get_size()[1] / 4
         # Initialize the buttons
-        self.start_button = TextButton(center_x, y_segments, game.game_canvas, "Start", "White", False, font_size=100)
-
-        self.options_button = TextButton(center_x, y_segments * 2, game.game_canvas, "Options", "White", False,
-                                         font_size=100)
-        self.exit_button = TextButton(center_x, y_segments * 3, game.game_canvas, "Exit", "White", False, font_size=100)
+        # self.start_button = TextButton(center_x, y_segments, game.game_canvas, "Start", "White", False, font_size=100)
+        #
+        # self.options_button = TextButton(center_x, y_segments * 2, game.game_canvas, "Options", "White", False,
+        #                                  font_size=100)
+        # self.exit_button = TextButton(center_x, y_segments * 3, game.game_canvas, "Exit", "White", False, font_size=100)
+        self.menu_options = ["Play", "Options", "Exit"]
+        self.index = 0
 
     def render_transition(self):
         # Check if the star transition is playing
@@ -111,25 +140,57 @@ class Menu(Scene):
                 GameWorld(self.game).enter_state()
 
     def update(self, delta_time, actions):
-        # Check if any button get pressed only if it's not transitioning
-        if not self.start_transitioning and not self.end_transitioning:
-            if self.start_button.check_click():
+        self.update_cursor(actions)
+        if actions["space"]:
+            if self.menu_options[self.index] == "Play":
                 self.end_transitioning = True
-            elif self.options_button.check_click():
-                print("Pressed")
-            elif self.exit_button.check_click():
+            elif self.menu_options[self.index] == "Exit":
                 self.game.exit_game()
 
-    def render(self, display: pygame.surface.Surface):
-        # Clear the screen
-        display.fill("#262626")
-        # Draw the buttons
-        self.start_button.draw()
+    # Check if any button get pressed only if it's not transitioning
+    # if not self.start_transitioning and not self.end_transitioning:
+    #     if self.start_button.check_click():
+    #         self.end_transitioning = True
+    #     elif self.options_button.check_click():
+    #         print("Pressed")
+    #     elif self.exit_button.check_click():
+    #         self.game.exit_game()
 
-        self.options_button.draw()
-        self.exit_button.draw()
-        # Render the transition if its necessary
+    def update_cursor(self, actions):
+        if actions['right']:
+            if self.index + 1 == len(self.menu_options):
+                self.index = 0
+            else:
+                self.index += 1
+            self.game.reset_keys()
+        elif actions['left']:
+            if not self.index:
+                self.index = len(self.menu_options) - 1
+            else:
+                self.index -= 1
+            self.game.reset_keys()
+
+        self.cursor_rect.x = self.cursor_x + (self.index * (1120/3))
+
+    def render(self, display: pygame.surface.Surface):
+        display.blit(self.background_image, (0, 0))
+        if not self.start_transitioning:
+            display.blit(self.box, self.box_rect)
+            display.blit(self.text_play, self.text_play_rect)
+            display.blit(self.text_options, self.text_options_rect)
+            display.blit(self.text_exit, self.text_exit_rect)
+            display.blit(self.cursor_img, self.cursor_rect)
+
         self.render_transition()
+
+        # Clear the screen
+        # display.fill("#262626")
+        # Draw the buttons
+        # self.start_button.draw()
+        #
+        # self.options_button.draw()
+        # self.exit_button.draw()
+        # Render the transition if its necessary
 
 
 class GameWorld(Scene):
@@ -155,23 +216,22 @@ class GameWorld(Scene):
 class PauseMenu(Scene):
     def __init__(self, game):
         super().__init__(game)
-        height = (70 * self.game.game_canvas.get_size()[1]) / 100
-        self.menu = pygame.image.load("../Resources/Images/cuadrao.png").convert_alpha()
-        self.menu = pygame.transform.smoothscale(self.menu, (self.menu.get_size()[0], height))
-        self.menu_x = self.game.game_canvas.get_size()[0] - 4 - self.menu.get_size()[0]
+        # menu_height = (70 * self.game.game_canvas.get_size()[1]) / 100
+        self.menu = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "Pause_Menu.png")).convert_alpha()
+        self.menu = pygame.transform.smoothscale(self.menu, (self.menu.get_size()[0], 500))
+        self.menu_x = self.game.game_canvas.get_size()[0] - 20 - self.menu.get_size()[0]
         self.menu_y = self.game.game_canvas.get_size()[1] - (self.game.game_canvas.get_size()[1] / 2) - (
-                    self.menu.get_size()[1] / 2)
+                self.menu.get_size()[1] / 2)
         self.menu_rect = self.menu.get_rect(topleft=(self.menu_x, self.menu_y))
-
         # self.menu_options = {0: "Party", 1: "Items", 2: "Magic", 3: "Exit"}
         self.menu_options = ["Party", "Items", "Magic", "Exit"]
         self.index = 0
-        # Comment
-        self.cursor_img = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "cursor.png"))
+        # Cursor
+        self.cursor_img = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "cursor.png")).convert_alpha()
         self.cursor_rect = self.cursor_img.get_rect()
-        self.cursor_y = self.menu_rect.y + 40
+        self.cursor_y = self.menu_rect.y + 80
         self.cursor_rect.x, self.cursor_rect.y = self.menu_rect.x + 20, self.cursor_y
-        print(self.menu.get_size()[1])
 
     def update(self, delta_time, actions):
         self.update_cursor(actions)
@@ -181,15 +241,22 @@ class PauseMenu(Scene):
 
     def update_cursor(self, actions):
         if actions['down']:
-            print(self.index % len(self.menu_options))
-            self.index = (self.index + 1) % len(self.menu_options)
+            if self.index + 1 == len(self.menu_options):
+                self.index = 0
+            else:
+                self.index += 1
 
             self.game.reset_keys()
         elif actions['up']:
-            self.index = (self.index - 1) % len(self.menu_options)
+            if not self.index:
+                self.index = len(self.menu_options) - 1
+            else:
+                self.index -= 1
             self.game.reset_keys()
+
         self.cursor_rect.y = self.cursor_y + (self.index * 100)
 
     def render(self, display: pygame.surface.Surface):
+        # self.prev_scene.render(display)
         display.blit(self.menu, self.menu_rect)
         display.blit(self.cursor_img, self.cursor_rect)

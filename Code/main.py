@@ -1,6 +1,6 @@
 import pygame
 from Data.data_handler import get_config
-from Code.Scenes.scene import Intro, GameWorld
+from Code.Scenes.scene import Intro, GameWorld, Menu
 from Code.config import Config
 import os
 from debug import debug
@@ -17,7 +17,7 @@ class Game:
         self.display = pygame.display.set_mode((self.config.screen_width, self.config.screen_height))
         self.clock = pygame.time.Clock()
         self.game_stack = []
-        self.actions = {"left": False, "right": False, "up": False, "down": False, "action1": False, "pause": False,
+        self.actions = {"left": False, "right": False, "up": False, "down": False, "space": False, "pause": False,
                         "menu": False}
         self.game_canvas = pygame.Surface((self.config.screen_width, self.config.screen_height))
         self.delta_time = 0
@@ -28,8 +28,10 @@ class Game:
         self.prev_time = 0
         self.dt = 0
 
-        self.load_scene()
         self.load_assets()
+
+        self.load_scene()
+
 
     def set_screen(self):
         self.display = pygame.display.set_mode(
@@ -56,7 +58,7 @@ class Game:
                 if event.key == pygame.K_s:
                     self.actions['down'] = True
                 if event.key == pygame.K_SPACE:
-                    self.actions['action1'] = True
+                    self.actions['space'] = True
                 if event.key == pygame.K_ESCAPE:
                     self.actions['pause'] = True
                 if event.key == pygame.K_TAB:
@@ -71,7 +73,7 @@ class Game:
                 if event.key == pygame.K_s:
                     self.actions['down'] = False
                 if event.key == pygame.K_SPACE:
-                    self.actions['action1'] = False
+                    self.actions['space'] = False
                     self.timer = pygame.time.get_ticks()
                 if event.key == pygame.K_LSHIFT:
                     self.actions['pause'] = False
@@ -100,7 +102,7 @@ class Game:
             self.clock.tick(60)
 
     def load_scene(self):
-        self.game_stack.append(GameWorld(self))
+        self.game_stack.append(Intro(self))
 
     def get_dt(self):
         now = time.time()
