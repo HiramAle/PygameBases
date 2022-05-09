@@ -166,7 +166,7 @@ class PauseMenu(Scene):
         # self.menu_options = {0: "Party", 1: "Items", 2: "Magic", 3: "Exit"}
         self.menu_options = ["Party", "Items", "Magic", "Exit"]
         self.index = 0
-
+        # Comment
         self.cursor_img = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "cursor.png"))
         self.cursor_rect = self.cursor_img.get_rect()
         self.cursor_y = self.menu_rect.y + 40
