@@ -13,11 +13,11 @@ class Scene:
         self.prev_scene = None
         # graphic handler
         self.bg_color = "#262626"
-        self.bg_image_path = ""
+        self.bg_image = ""
         # player properties
         self.player_x = 0
         self.player_y = 0
-        self.player_direction = pygame.math.Vector2()
+        self.player_facing = "down"
         # sprites
         self.visible_sprites = pygame.sprite.Group()
         self.obstacle_sprites = pygame.sprite.Group()
@@ -170,19 +170,28 @@ class Menu(Scene):
 class GameWorld(Scene):
     def __init__(self, game):
         super().__init__(game)
-        self.player_x, self.player_y = 100, 100
-        self.bg_image = pygame.image.load(os.path.join(self.game.resources_dir, "Images","ground.png")).convert_alpha()
+        # Background
+        self.bg_image = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "ground.png")).convert_alpha()
+        # Sprites Groups
         self.visible_sprites = YSortCameraGroup(self.game.game_canvas, self.bg_image)
         self.obstacle_sprites = pygame.sprite.Group()
-        self.player = Player(self.visible_sprites, (self.player_x, self.player_y), self.obstacle_sprites)
+        # Player
+        self.player_x, self.player_y = 100, 100
+        self.player_facing = "down"
+        self.player = Player((self.player_x, self.player_y), self.player_facing, self.visible_sprites,
+                             self.obstacle_sprites)
 
     def update(self, delta_time, actions):
+        self.player.input(actions)
         self.visible_sprites.update()
-        self.player.update()
-
+        # self.player.update(actions)
         if actions["pause"]:
             self.game.reset_keys()
             PauseMenu(self.game).enter_state()
+
+    def update_animation(self):
+        self.visible_sprites.update()
+        # self.player.animate_sprite()
 
     def render(self, display: pygame.surface.Surface):
         display.fill("#262626")
@@ -200,8 +209,56 @@ class GameWorld(Scene):
 
 
 class Dialogue(Scene):
-    def __init__(self, game):
+    def __init__(self, game, text):
         super().__init__(game)
+        # Box
+        self.box = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "Start_menu_box.png")).convert_alpha()
+        self.box_rect = self.box.get_rect(topleft=(64, 394))
+        # Cursor
+        self.cursor_img = pygame.image.load(
+            os.path.join(self.game.resources_dir, "Images", "cursor.png")).convert_alpha()
+        # self.cursor_img = pygame.transform.rotate(self.cursor_img, -90)
+        self.cursor_img = pygame.transform.rotozoom(self.cursor_img, -90, 2)
+        self.x_cursor_offset = self.box_rect.x + self.box_rect.size[0] - 100
+        self.y_cursor_offset = self.box_rect.y + (self.box_rect.size[1] / 2) + 50
+        self.cursor_rect = self.cursor_img.get_rect(center=(self.x_cursor_offset, self.y_cursor_offset))
+        # Text writing
+        self.text = text
+        self.text_index = 0
+        self.display_text = text[self.text_index]
+        # Text
+        self.x_text_offset = self.box_rect.x + 140
+        self.y_text_offset = self.box_rect.y + (self.box_rect.size[1] / 2) - 50
+        self.font = pygame.font.Font(os.path.join(self.game.resources_dir, "Fonts", "pokemon_pixel_font.ttf"), 100)
+        self.text_render = self.font.render(self.display_text, False, "#565656")
+        self.text_rect = self.text_render.get_rect(topleft=(self.x_text_offset, self.y_text_offset))
+        self.end = False
+        self.waiting = True
+        self.actual_time = pygame.time.get_ticks()
+
+    def update(self, delta_time, actions):
+        if self.end:
+            if actions["space"]:
+                self.exit_state()
+                self.game.reset_keys()
+
+        if self.text_index == len(self.text) - 1:
+            self.end = True
+        else:
+            if timer(self.actual_time, 0.05):
+                self.actual_time = pygame.time.get_ticks()
+                self.display_text += self.text[self.text_index]
+                self.text_index += 1
+                self.text_render = self.font.render(self.display_text, False, "#565656")
+                self.text_rect = self.text_render.get_rect(topleft=(self.x_text_offset, self.y_text_offset))
+
+    def render(self, display: pygame.surface.Surface):
+        self.prev_scene.render(display)
+        display.blit(self.box, self.box_rect)
+        display.blit(self.text_render, self.text_rect)
+        if self.end:
+            display.blit(self.cursor_img, self.cursor_rect)
 
 
 class PauseMenu(Scene):
@@ -237,6 +294,7 @@ class PauseMenu(Scene):
         self.cursor_rect.x, self.cursor_rect.y = self.menu_rect.x + 20, self.cursor_y
 
     def update(self, delta_time, actions):
+        self.prev_scene.update_animation()
         self.update_cursor(actions)
         if actions["pause"]:
             self.exit_state()
@@ -245,6 +303,8 @@ class PauseMenu(Scene):
             if self.menu_options[self.index] == "Exit":
                 self.game.game_stack = []
                 Menu(self.game).enter_state()
+            elif self.menu_options[self.index] == "Option1":
+                Dialogue(self.game, "AAAAAAAAAAAAAAAA").enter_state()
         self.game.reset_keys()
 
     def update_cursor(self, actions):

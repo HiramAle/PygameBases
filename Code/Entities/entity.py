@@ -15,7 +15,7 @@ class Entity(pygame.sprite.Sprite):
         self.hitbox = pygame.Rect(self.rect.x, self.rect.y, hit_box_w, hit_box_h)
         # movement
         self.direction = pygame.math.Vector2()
-        self.speed = 5
+        self.speed = 4
         # collision sprites
         self.obstacle_sprites = obstacle_sprites
         # animation

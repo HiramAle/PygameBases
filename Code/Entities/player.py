@@ -6,8 +6,9 @@ from Code.Entities.entity import Entity
 class Player(Entity):
     def __init__(
             self,
+            position: tuple,
+            facing: str,
             groups: pygame.sprite.Group,
-            pos: tuple,
             obstacle_sprites: pygame.sprite.Group):
         super().__init__(
             groups,
@@ -16,16 +17,14 @@ class Player(Entity):
         )
         self.sprite_type = "player"
         # graphics
-        self.rect = self.image.get_rect(topleft=pos)
+        self.rect = self.image.get_rect(topleft=position)
         self.hitbox = pygame.Rect(self.rect.x, self.rect.y, 64, 64)
         # status
-        self.status = 'down_idle'
-        self.facing = "down"
+        self.facing = facing
+        self.status = self.facing + "_idle"
         # assets
         self.import_assets()
-
         self.animation_speed = 0.08
-        self.player = 3
 
     def import_assets(self):
         self.animations = {"down": import_cut_graphics("Sprites/Player/player_down_run.png", 64, 64 * 2),
@@ -53,14 +52,6 @@ class Player(Entity):
             self.facing = "up"
 
     def animate_sprite(self):
-        # set the animations depending on the facing direction
-        # self.animations["up"] = self.animations["up" + self.facing]
-        # self.animations["down"] = self.animations["down" + self.facing]
-        # self.animations["right"] = self.animations["right" + self.facing]
-        # self.animations["left"] = self.animations["down" + self.facing]
-        # self.animations["up_idle"] = self.animations[self.facing + "_idle"]
-        # self.animations["down_idle"] = self.animations[self.facing + "_idle"]
-
         animation = self.animations[self.status]
 
         self.frame_index += self.animation_speed
@@ -70,31 +61,29 @@ class Player(Entity):
         self.image = animation[int(self.frame_index)]
         self.rect = self.image.get_rect(center=self.hitbox.center)
 
-    def input(self):
-        keys = pygame.key.get_pressed()
+    def input(self, actions):
+        # keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_w] and not keys[pygame.K_s]:
+        if actions["up"] and not actions["down"]:
             self.direction.y = -1
             self.status = "up"
-        elif keys[pygame.K_s] and not keys[pygame.K_w]:
+        elif actions["down"] and not actions["up"]:
             self.direction.y = 1
             self.status = "down"
         else:
             self.direction.y = 0
 
-        if keys[pygame.K_a] and not keys[pygame.K_d]:
+        if actions["left"] and not actions["right"]:
             self.direction.x = -1
             self.status = "left"
-        elif keys[pygame.K_d] and not keys[pygame.K_a]:
+        elif actions["right"] and not actions["left"]:
             self.direction.x = 1
             self.status = "right"
         else:
             self.direction.x = 0
 
-
     def update(self):
-        self.input()
+        # self.input()
         self.set_status()
         self.animate_sprite()
         self.move()
-
