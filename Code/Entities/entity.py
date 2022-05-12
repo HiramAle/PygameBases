@@ -1,5 +1,21 @@
 import pygame
 
+import Code.Scenes.scene
+
+
+class Emote(pygame.sprite.Sprite):
+    def __init__(self,
+                 group: Code.Scenes.camera.YSortCameraGroup):
+        super().__init__()
+        # animation
+        self.animations = {}
+        self.frame_index = 0
+        self.animation_speed = 0.6
+        self.image = image
+        self.rect = self.image.get_rect()
+
+    def update(self): ...
+
 
 class Entity(pygame.sprite.Sprite):
     def __init__(self,

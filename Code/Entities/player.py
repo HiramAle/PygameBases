@@ -1,4 +1,6 @@
 import pygame
+
+import Code.Scenes.scene
 from Code.support import import_cut_graphics
 from Code.Entities.entity import Entity
 
@@ -6,10 +8,10 @@ from Code.Entities.entity import Entity
 class Player(Entity):
     def __init__(
             self,
-            position: tuple,
-            facing: str,
-            groups: pygame.sprite.Group,
-            obstacle_sprites: pygame.sprite.Group):
+            position=(0, 0),
+            facing="down",
+            groups=pygame.sprite.Group(),
+            obstacle_sprites=pygame.sprite.Group()):
         super().__init__(
             groups,
             import_cut_graphics("Sprites/Player/player_down_idle.png", 64, 64 * 2)[0],

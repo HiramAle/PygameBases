@@ -3,7 +3,10 @@ import os
 
 
 def import_cut_graphics(path: str, tile_width: int, tile_height: int) -> list:
-    image = pygame.image.load(os.path.join("../Resources/", path)).convert_alpha()
+    pygame.init()
+    display = pygame.display.set_mode((1280,720))
+    image = pygame.image.load(
+        os.path.join("../Resources", path)).convert_alpha()
     tile_num_x = image.get_size()[0] // tile_width
     tile_num_y = image.get_size()[1] // tile_height
     cut_images = []

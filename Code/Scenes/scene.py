@@ -1,4 +1,6 @@
 import pygame
+
+import Code.Entities.entity
 from Code.GUI.transitions import FadeIn, FadeOut
 from Code.support import import_cut_graphics, get_center, timer
 from Code.Entities.player import Player
@@ -7,7 +9,7 @@ import os
 
 
 class Scene:
-    def __init__(self, game):
+    def __init__(self, game, player=Code.Entities.player.Player()):
         # stack handler
         self.game = game
         self.prev_scene = None
@@ -15,6 +17,7 @@ class Scene:
         self.bg_color = "#262626"
         self.bg_image = ""
         # player properties
+        self.player = player
         self.player_x = 0
         self.player_y = 0
         self.player_facing = "down"
@@ -187,7 +190,12 @@ class GameWorld(Scene):
         # self.player.update(actions)
         if actions["pause"]:
             self.game.reset_keys()
-            PauseMenu(self.game).enter_state()
+            pause = PauseMenu(self.game, self.player)
+            pause.player_x = self.game.game_canvas.get_size()[0] / 2 - 32
+            pause.player_y = self.game.game_canvas.get_size()[1] / 2 - 64 - 32
+            print(pause.player_x)
+            print(pause.player_y)
+            pause.enter_state()
 
     def update_animation(self):
         self.visible_sprites.update()
@@ -206,6 +214,57 @@ class GameWorld(Scene):
         if self.start_transitioning:
             if self.start_transition.play(self.game.dt):
                 self.start_transitioning = False
+
+
+class Emote(Scene):
+    def __init__(self, game, entity: Code.Entities.entity.Entity, emote_type):
+        super().__init__(game)
+        self.entity = entity
+        # Animation variables
+        self.animation_speed = 0.1
+        self.animations = []
+        self.frame_index = 0
+        self.animations = import_cut_graphics("Sprites/Emotes/emote_" + emote_type + ".png", 64, 64)
+        self.image = self.animations[self.frame_index]
+        self.image_rect = self.image.get_rect(midtop=(self.entity.rect.x, self.entity.rect.y))
+        self.end = False
+        self.end_time = 0
+
+    def update(self, delta_time, actions):
+        if self.end:
+            if timer(self.end_time, 0.5):
+                self.exit_state()
+                self.game.reset_keys()
+        elif self.frame_index < len(self.animations) - 1:
+            self.frame_index += self.animation_speed
+            self.image = self.animations[int(self.frame_index)]
+
+        elif int(self.frame_index) == len(self.animations) - 1:
+            self.end = True
+            self.end_time = pygame.time.get_ticks()
+
+        #
+        #
+        # if int(self.frame_index) == len(self.animations) - 1:
+        #     self.end = False
+        #     # self.exit_state()
+        #     # self.game.reset_keys()
+        # elif not self.end:
+        #     self.frame_index += self.animation_speed
+        #     self.image = self.animations[int(self.frame_index)]
+        # else:
+
+        # print(self.frame_index, len(self.animations))
+
+    def render(self, display: pygame.surface.Surface):
+        self.prev_scene.render(display)
+        # Increase the animation frame
+        # self.frame_index += self.animation_speed
+        # Checks if the animation frame is the last one
+        # Set and blit the image
+        # self.image = self.animations[int(self.frame_index)]
+        display.blit(self.image, self.image_rect)
+        # Render the transition if necessary
 
 
 class Dialogue(Scene):
@@ -262,8 +321,9 @@ class Dialogue(Scene):
 
 
 class PauseMenu(Scene):
-    def __init__(self, game):
+    def __init__(self, game, player: Code.Entities.player.Player):
         super().__init__(game)
+        self.player = player
         # Menu
         self.menu = pygame.image.load(os.path.join(self.game.resources_dir, "Images", "Pause_Menu.png")).convert_alpha()
         self.menu = pygame.transform.smoothscale(self.menu, (self.menu.get_size()[0], 500))
@@ -305,6 +365,9 @@ class PauseMenu(Scene):
                 Menu(self.game).enter_state()
             elif self.menu_options[self.index] == "Option1":
                 Dialogue(self.game, "AAAAAAAAAAAAAAAA").enter_state()
+            elif self.menu_options[self.index] == "Option2":
+                emote = Emote(self.game, self.player, "zzz")
+                emote.enter_state()
         self.game.reset_keys()
 
     def update_cursor(self, actions):
